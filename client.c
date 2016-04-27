@@ -1,16 +1,3 @@
-/*
- Networking is simple:
- 
-    everyone's computer has an IP address which is unique 
- 
-    when you open a connection, you open a socket (think of a socket as a wire from the client to the server)
- 
-    at the client side, you have to give the server IP address and port. 
-        ports are like an boat port where each port is unique to the ship/type of data it recieves 
- 
-    pthread is a thread
- */
-
 #include "client&server.h"
 
 
