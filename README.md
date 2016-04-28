@@ -6,8 +6,5 @@ The structure of this proj:
   server.c
   
 
-Worked on client side. stuck on creating a connection structure to make a socket to server
-also stuck on how client would need a thread
 
-
-
+Still on client side. Got connection to look ok. need to work on writing to a buffer, signaling when threads are created, and writing the input/output funcitons.
