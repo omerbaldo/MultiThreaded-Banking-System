@@ -1,32 +1,23 @@
 #include "client&server.h"
 
 
+//---------------------------GLOBAL STRUCTS
+int sockfd = -1;
+struct sockaddr_in serverAddressInfo; //address info
+struct hostent *serverIPAddress; //Info about the computer
 
-
+//-------------------------------------------------------------------------------INPUT OUTPUT THREADS
 void * commandLineInput(void * arg){ //arg is there as a placeholder.
-    
     char string[100];//
-    
     while(1){
         scanf("%s",(char*)&string); //read one string from command line
-        
     }
 }
 
-
-
 //reads server output
 void * serverOutput (void *arg){
-    
-    
+    return NULL;
 }
-
-
-
-
-
-
-
 
 
 
@@ -50,12 +41,13 @@ int main(int argc, char ** argv)
     
     
     //STEP 2 ATTEMPT TO CONNECT TO SERVER
-    char * server = argv[1]; //IP address
+    char * servername = argv[1]; //IP address
     printf("Welcome ! Attempting to connect to host \n");
     
     
     pthread_t clientThread ;//creates a thread ID for client command line
     pthread_t serverThread;//created thread ID for reading from server response
+    
     
     //NETWORKING
     
@@ -67,6 +59,36 @@ int main(int argc, char ** argv)
             //next try to connect to the server by calling socket()
                 //error if socket <0 . cannot create a valid connection
     
+    serverIPAddress = gethostbyname(servername);
+    if(serverIPAddress==NULL){
+        printf("server does not exsist!");
+        exit(0);
+    }
+    
+    sockfd =  socket(AF_INET, SOCK_STREAM, 0);
+    if(sockfd<0){
+        printf("error creating socket");
+        exit(0);
+    }
+    
+    bzero((char *) &serverAddressInfo, sizeof(serverAddressInfo)); //zero out the struct. good cause it sets sin_zero
+    serverAddressInfo.sin_family = AF_INET; //internet family
+    serverAddressInfo.sin_port = htons(portNumber); //port number
+    
+    //set sin_addr;
+    //set sin_zero to
+    //                                      union, 4 byte IP in network byte order
+    bcopy((char *)serverIPAddress->h_addr, (char *)&serverAddressInfo.sin_addr.s_addr, serverIPAddress->h_length);
+    //      src                             desc                                        length to copy
+    
+    while(connect(sockfd, (struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))==-1)
+    {
+        printf("error trying to connect! retrying in three3 seconds");
+        sleep(3);
+    }
+    
+    
+    //if it is here it is successful
     
     
     //STEP 3 CREATE THREADS
@@ -83,6 +105,4 @@ int main(int argc, char ** argv)
     
     pthread_create(&clientThread, NULL,&commandLineInput,NULL);
     pthread_create(&serverThread, NULL,&serverOutput ,NULL);
-    
-  
 }
