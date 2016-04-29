@@ -46,6 +46,7 @@ void * serverOutput (void *arg){
         if(strcmp("exit",string)){
             printf("exiting\n");
             //EXIT THREAD
+            pthread_exit(0);
             return 0;
         }
         
