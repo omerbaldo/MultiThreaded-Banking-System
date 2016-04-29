@@ -1,10 +1,17 @@
 #include "client&server.h"
 
 //GLOBAL STRUCTS-------------------------------------------------------------------------------------
-    //socket stuff
+    //SOCKET STUFF
     int sockfd = -1;
-    struct sockaddr_in serverAddressInfo; //address info
+    struct sockaddr_in serverAddressInfo; //Address info
     struct hostent *serverIPAddress; //Info about the computer
+
+//HELPER METHODS--------------------------------------------------------------------------------------
+void error(char *msg)
+{
+    perror(msg);
+    exit(0);
+}
 
 //INPUT OUTPUT THREADS-------------------------------------------------------------------------------
 void * commandLineInput(void * arg){ //arg is there as a placeholder.
@@ -13,16 +20,14 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
     
     while(1){
         fgets(string,255,stdin); //reads in command line input until the last character
+        
         long n = write(sockfd, string, strlen(string));
         
-        if(n<0){
-            printf("error writing to socket");
-            exit(0);
-        }
+        if(n<0){ error("error writing to socket");}
+    
         bzero(string, 256);
         sleep(2);
     }
-    
     
     return NULL;
 }
@@ -36,14 +41,11 @@ void * serverOutput (void *arg){
         long n = read(sockfd,string,255); //read until the last character to keep \0
         
         // if we couldn't read from the server for some reason, complain and exit
-        if (n < 0)
-        {
-            printf("ERROR reading from socket");
-            exit(0);
-        }
+        if (n < 0) {error("ERROR reading from socket"); }
+        
         if(strcmp("exit",string)){
             printf("exiting");
-            //exit
+            //EXIT THREAD
             return 0;
         }
         
@@ -56,10 +58,7 @@ void * serverOutput (void *arg){
 int main(int argc, char ** argv)
 {
 //STEP 1: ERROR CHECKING------------------------------------------------------------------------------------------------
-        if(argc != 2){
-            printf("Error, Argument Count");
-            exit(0);
-        }
+        if(argc != 2){ error("Error, Argument Count");}
     
 //STEP 2 ATTEMPT TO CONNECT TO SERVER-----------------------------------------------------------------------------------
 
@@ -72,16 +71,10 @@ int main(int argc, char ** argv)
     
         printf("Welcome ! Attempting to connect to host \n");
         serverIPAddress = gethostbyname(argv[1]);
-        if(serverIPAddress==NULL){
-            printf("server does not exsist!");
-            exit(0);
-        }
+        if(serverIPAddress==NULL){ error("server does not exsist!"); }
         
         sockfd =  socket(AF_INET, SOCK_STREAM, 0);
-        if(sockfd<0){
-            printf("error creating socket");
-            exit(0);
-        }
+        if(sockfd<0){error("error creating socket"); }
         
         bzero((char *) &serverAddressInfo, sizeof(serverAddressInfo)); //zero out the struct. (sin_zero becomes 0)
         serverAddressInfo.sin_family = AF_INET; //internet family
