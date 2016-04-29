@@ -24,6 +24,14 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
         long n = write(sockfd, string, strlen(string));
         
         if(n<0){ error("error writing to socket");}
+        
+        
+        if(strcmp("exit",string)){
+            printf("exiting\n");
+            pthread_exit(0);
+            return 0;
+        }
+        
     
         bzero(string, 256);
         sleep(2);
@@ -45,7 +53,6 @@ void * serverOutput (void *arg){
         
         if(strcmp("exit",string)){
             printf("exiting\n");
-            //EXIT THREAD
             pthread_exit(0);
             return 0;
         }
@@ -109,6 +116,11 @@ int main(int argc, char ** argv)
         printf("finish \n");
         printf("exit \n");
 
+    
+        //maybe have a lock so read and write cant happen at the same time
+    
+    
+    
         pthread_create(&clientThread, NULL,&commandLineInput,NULL);//returns errno on failure, 0 if succesful
         pthread_create(&serverThread, NULL,&serverOutput ,NULL);
     
@@ -120,5 +132,4 @@ int main(int argc, char ** argv)
     
     close(sockfd);
     return 0;
-    
 }
