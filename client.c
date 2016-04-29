@@ -44,12 +44,12 @@ void * serverOutput (void *arg){
         if (n < 0) {error("ERROR reading from socket"); }
         
         if(strcmp("exit",string)){
-            printf("exiting");
+            printf("exiting\n");
             //EXIT THREAD
             return 0;
         }
         
-        printf("%s",string);
+        printf("%s\n",string);
         bzero(string, 256);
     }
     return NULL;
@@ -88,7 +88,7 @@ int main(int argc, char ** argv)
         
         while(connect(sockfd, (struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))==-1)
         {
-            printf("error trying to connect! retrying in three 3 seconds");
+            printf("error trying to connect! retrying in three 3 seconds\n");
             sleep(3);
         }
         
