@@ -6,6 +6,10 @@
     struct sockaddr_in serverAddressInfo; //Address info
     struct hostent *serverIPAddress; //Info about the computer
 
+    pthread_mutex_t lock; //LOCK SO READ AND WRITE THREADS CAN'T HAPPEN AT THE SAME TIME
+
+
+
 //HELPER METHODS--------------------------------------------------------------------------------------
 void error(char *msg)
 {
@@ -15,27 +19,36 @@ void error(char *msg)
 
 //INPUT OUTPUT THREADS-------------------------------------------------------------------------------
 void * commandLineInput(void * arg){ //arg is there as a placeholder.
+  
+    
     char string[256];
     bzero(string, 256);//NULL OUT ARRAY
     
     while(1){
-        fgets(string,255,stdin); //reads in command line input until the last character
-        
-        long n = write(sockfd, string, strlen(string));
-        
-        if(n<0){ error("error writing to socket");}
-        
-        
-        if(strcmp("exit",string)){
-            printf("exiting\n");
-            pthread_exit(0);
-            return 0;
-        }
-        
     
-        bzero(string, 256);
-        sleep(2);
+        pthread_mutex_lock(&lock);
+        
+            fgets(string,255,stdin); //reads in command line input until the last character
+            
+            long n = write(sockfd, string, strlen(string));
+            
+            if(n<0){ error("error writing to socket");}
+            
+            
+            if(strcmp("exit",string)){
+                printf("exiting\n");
+                pthread_exit(0);
+                return 0;
+            }
+            
+            
+            bzero(string, 256);
+            sleep(2);
+        
+        pthread_mutex_unlock(&lock);
     }
+    
+    
     
     return NULL;
 }
@@ -45,21 +58,32 @@ void * serverOutput (void *arg){
     char string[256];
     bzero(string, 256);//NULL OUT ARRAY
     
-    while (1){
-        long n = read(sockfd,string,255); //read until the last character to keep \0
-        
-        // if we couldn't read from the server for some reason, complain and exit
-        if (n < 0) {error("ERROR reading from socket"); }
-        
-        if(strcmp("exit",string)){
-            printf("exiting\n");
-            pthread_exit(0);
-            return 0;
+   
+    
+        while (1){
+            
+            pthread_mutex_lock(&lock);
+            
+                long n = read(sockfd,string,255); //read until the last character to keep \0
+                
+                // if we couldn't read from the server for some reason, complain and exit
+                if (n < 0) {error("ERROR reading from socket"); }
+                
+                if(strcmp("exit",string)){
+                    printf("exiting\n");
+                    pthread_exit(0);
+                    return 0;
+                }
+                
+                printf("%s\n",string);
+                bzero(string, 256);
+            
+            pthread_mutex_unlock(&lock);
+            
         }
-        
-        printf("%s\n",string);
-        bzero(string, 256);
-    }
+    
+    
+    
     return NULL;
 }
 
@@ -72,8 +96,8 @@ int main(int argc, char ** argv)
 
     
         //STEP 2.5 CREATE THREADS
-        pthread_t clientThread ;//creates a thread ID for client command line
-        pthread_t serverThread;//created thread ID for reading from server response
+        pthread_t writeThread ;//creates a thread ID for client command line
+        pthread_t readThread;//created thread ID for reading from server response
     
         //do some signaling and lock stuff. idk yet
     
@@ -121,11 +145,11 @@ int main(int argc, char ** argv)
     
     
     
-        pthread_create(&clientThread, NULL,&commandLineInput,NULL);//returns errno on failure, 0 if succesful
-        pthread_create(&serverThread, NULL,&serverOutput ,NULL);
+        pthread_create(&writeThread, NULL,&commandLineInput,NULL);//returns errno on failure, 0 if succesful
+        pthread_create(&readThread, NULL,&serverOutput ,NULL);
     
-        pthread_join(clientThread, NULL);
-        pthread_join(serverThread, NULL);
+        pthread_join(writeThread, NULL);
+        pthread_join(readThread, NULL);
         //call join, join suspends the main program from going further until the thread terminates from start fnc
     
 //STEP 4 CLOSE SOCKET---------------------------------------------------------------------------------------------------
