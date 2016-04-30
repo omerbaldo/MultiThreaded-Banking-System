@@ -1,15 +1,26 @@
+//GLOBALS
+int socket = -1;
+
+//HELPER METHODS-------------------------
+void error(char *msg){
+    perror(msg);
+    exit(0);
+}
+//STRUCTERS
 struct acc_info{
-	int isfree; //0 means not free, 1 means free space
-	char accountname[100];
-	int balance;
-	int in_use; //0 means not in use, 1 means in use
+	int is_free; //0 means not free, 1 means free space
+	char acc_name[100];
+	float balance;
+	int in_session; //0 means not in use, 1 means in use
 };
 
 acc_info* account_list[20] = (acc_info*)malloc(20 * sizeof(struct acc_info)); //array of strings consisting of the account names
 //int[20] freelist; //tells if a particular position in the account list array is free
 int numused = 0; //number of accounts currently in bank
 
-int open_account(char* name){
+
+
+int open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERROR
 	int i;
 	
 	if(numused == 20){
@@ -17,10 +28,10 @@ int open_account(char* name){
 	}
 	
 	for(i = 0; i< 20; i++){
-		if(acc_info[i]->isfree == 1){ //free account space
+		if(acc_info[i]->isfree == 1){ //this location account space is free
 			continue;
 		}
-		if(strcmp(name, account_list[i]) == 0){
+		if(strcmp(name, account_list[i]->acc_name) == 0){
 			return 2; //ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS
 		}
 	}
@@ -33,5 +44,183 @@ int open_account(char* name){
 	}
 	
 	//AT THIS POINT, IT IS SAFE TO CREATE THE NEW ACCOUNT
+	for(i = 0; i< 20; i++){
+		if(acc_info[i]->isfree == 1){
+			break;
+		}
+	}
+	//At this point, we are at the first available free location in array
+	
+	account_list[i]->is_free = 0;
+	account_list[i]->balance = 0;
+	strcpy(acc_info[i]->acc_name, name);
+	account_list[i]->in_session = 0;
+	numused++;
+	//Account successfully created, and added to the account_list array
+	return 0;
+	
+}
+
+
+
+
+int start_account(char* name){ //RETURNS location index (positive number) of account in array if successfully started; returns -1, and -2 on ERROR!
+	int i, location_index;
+	
+	for(i = 0; i< 20; i++){
+		if(strcmp(account_list[i]->acc_name, name) == 0){
+			if(account_list[i]->in_session == 1){ //account is already in session, ERROR! 
+				return -1;
+			}
+			account_list[i]->in_session = 1;
+			location_index = i;
+			return location_index;
+		}
+	}
+	
+	return -2; //account name does not exist, ERROR!
+}
+
+
+
+
+
+
+
+
+int credit(int location_index, float amount){
+	if(location_index < 0){
+		return 1; //client not in session
+	}
+	
+	account_list[i]->balance = account_list[i]->balance + amount;
+	return 0; //success
+}
+
+
+
+
+
+int debit(int location_index, float amount){ //returns 0 on successful debit, 1 if customer is not in session, and 2 if customer trying to debit more than balance
+	if(location_index < 0){
+		return 1; //client not in session
+	}
+	
+	if(amount > account_list[i]->balance){
+		return 2; //NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!
+	}
+	account_list[i]->balance = account_list[i]->balance - amount;
+	return 0; //success
+}
+
+
+
+
+
+float balance(char* name){
+	int i;
+	
+	for(i = 0; i< 20; i++){
+		if(strcmp(account_list[i]->acc_name, name) == 0){
+			break;
+		}
+	}
+	
+	if(account_list[i]->in_session == 0){
+		return 1; //not in session error!
+	}
+	
+	return account_list[i]->balance;
+}
+
+
+
+
+int finish(char* name){
+	int i;
+	
+	for(i = 0; i< 20; i++){
+		if(strcmp(account_list[i]->acc_name, name) == 0){
+			break;
+		}
+	}
+	
+	if(account_list[i]->in_session == 0){ //account already not in session, error!
+		return 1;
+	}
+	
+	account_list[i]->in_session = 1;
+	return 0; //success
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void shutDownHandler(){
+	//go through all clients from socket list
+	//disconnect them
+	exit(0);
+}
+
+
+int main(int argc, char ** argv){
+
+	int n;//store return value
+	signal(SIGINT, shutDownHandler);//disconnects when user presses cnt c
+
+
+	//STEP 1: CREATE THE SOCKET (2 way wire)	
+	socket = socket(AF_INET, SOCK_STREAM,0)//create socket 
+	if(socket<0){
+		error("could not open server socket");
+	}	
+	
+	//STEP 2. DO STUFF WITH SERVER ADDRESS OBJECT
+	struct sockaddr_in serverAddressInfo; 
+	bzero((char *) &serverAddressInfo, sizeof(serverAddressInfo)); //INITILIAZE
+	serverAddressInfo.sin_port = htons(portNumber); //ADD PORT
+	serverAddressInfo.sin_family = AF_INET; //INTERNET FAMILY
+	serverAddressInfo.sin_addr.s_addr = INADDR_ANY; //TYPE OF IP CONNECTIONS WE CAN ADD
+
+	//STEP 2: BIND THE wire/socket TO A PORT on SERVER
+	n =	bind(sockfd, (struct sockaddr *) &serverAddressInfo, sizeof(serverAddressInfo));
+	if(n<0){
+		error("binding error");
+	}
+	
+	//listen
+		//socket, number of connections allowed to wait on queue
+	listen(sockfd,5)
+	
+	while(1){
+		
+		
+		
+		
+		
+	}
+	
+	/*
+	while true:
+		loop through the program
+		create a connection object for each client you have
+			linked list of connection objects
+			
+	*/
+		
+
+
 	
 }
