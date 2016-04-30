@@ -160,7 +160,21 @@ int finish(char* name){
 
 
 
-
+void server_print(){
+	int i;
+	
+	for(i = 0; i < 20; i++){
+		if(account_list[i]->isfree == 1){
+			continue;
+		}
+		if(account_list[i]->in_session == 1){ //account is in session
+			printf("%s%s\n%s\n\n", "Account Name: ", account_list[i]->acc_name, "IN SERVICE");
+		}
+		else{ //account is not in session
+			printf("%s%s\n%s%f\n\n", "Account Name: ", account_list[i]->acc_name, "Balance: ", account_list[i]->balance);
+		}
+	}
+}
 
 
 
