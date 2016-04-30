@@ -94,7 +94,8 @@ int main(int argc, char ** argv)
     
 //STEP 2 ATTEMPT TO CONNECT TO SERVER-----------------------------------------------------------------------------------
 
-    
+        pthread_mutex_init(&lock, NULL);
+        
         //STEP 2.5 CREATE THREADS
         pthread_t writeThread ;//creates a thread ID for client command line
         pthread_t readThread;//created thread ID for reading from server response
