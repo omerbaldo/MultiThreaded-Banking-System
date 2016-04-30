@@ -1,12 +1,12 @@
-//GLOBALS
+//GLOBALS------------------------------------------------------------------------
 int socket = -1;
 
-//HELPER METHODS-------------------------
+//HELPER METHODS----------------------------------------------------------------------------
 void error(char *msg){
     perror(msg);
     exit(0);
 }
-//STRUCTERS
+//STRUCTERS------------------------------------------------------------------------
 struct acc_info{
 	int is_free; //0 means not free, 1 means free space
 	char acc_name[100];
@@ -17,6 +17,11 @@ struct acc_info{
 acc_info* account_list[20] = (acc_info*)malloc(20 * sizeof(struct acc_info)); //array of strings consisting of the account names
 //int[20] freelist; //tells if a particular position in the account list array is free
 int numused = 0; //number of accounts currently in bank
+
+
+struct sockaddr_in * head; //points to linked list of sockaddr_in to describe client stuff
+struct sockaddr_in *last; //points to last thing in linked list
+
 
 
 
@@ -161,7 +166,7 @@ int finish(char* name){
 
 
 
-
+//thread
 
 
 
@@ -179,7 +184,6 @@ int main(int argc, char ** argv){
 
 	int n;//store return value
 	signal(SIGINT, shutDownHandler);//disconnects when user presses cnt c
-
 
 	//STEP 1: CREATE THE SOCKET (2 way wire)	
 	socket = socket(AF_INET, SOCK_STREAM,0)//create socket 
@@ -200,27 +204,28 @@ int main(int argc, char ** argv){
 		error("binding error");
 	}
 	
-	//listen
-		//socket, number of connections allowed to wait on queue
-	listen(sockfd,5)
-	
+	//STEP 3: LISTEN FOR INCOMING CONNECITONS ON SOCKET
+	listen(sockfd,10); //10 pending connection on uque
+				
+	//STEP 4: ACCEPT INCOMING CONNECTIONS
 	while(1){
-		
-		
-		
+	
+		int newSocketFD; //new socket file descriptor
+		struct sockaddr_in clientNode; 
+		bzero((char *) &clientNode, sizeof(clientNode));
+	
+		newSocketFD= clientNode-> = accept(sockfd,(struct sockaddr *) clientNode, sizeof(struct clientNode));
+		if(n==-1){
+			error("cannot accept");
+		}
+	
+
+	
 		
 		
 	}
 	
-	/*
-	while true:
-		loop through the program
-		create a connection object for each client you have
-			linked list of connection objects
-			
-	*/
-		
-
-
 	
+	
+	return 0;
 }
