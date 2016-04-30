@@ -53,6 +53,7 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
     return NULL;
 }
 
+
 //reads server output
 void * serverOutput (void *arg){
     char string[256];
@@ -97,14 +98,14 @@ int main(int argc, char ** argv)
         pthread_mutex_init(&lock, NULL);
         
         //STEP 2.5 CREATE THREADS
-        pthread_t writeThread ;//creates a thread ID for client command line
-        pthread_t readThread;//created thread ID for reading from server response
+        pthread_t writeThread ;//creates a thread ID for reading from client command line
+        pthread_t readThread;//creates a thread ID for reading from server response, and writing back to user
     
         //do some signaling and lock stuff. idk yet
     
-        printf("Welcome ! Attempting to connect to host \n");
+        printf("Welcome! Attempting to connect to host \n");
         serverIPAddress = gethostbyname(argv[1]);
-        if(serverIPAddress==NULL){ error("server does not exsist!"); }
+        if(serverIPAddress==NULL){ error("server does not exist!"); }
         
         sockfd =  socket(AF_INET, SOCK_STREAM, 0);
         if(sockfd<0){error("error creating socket"); }
@@ -146,7 +147,7 @@ int main(int argc, char ** argv)
     
     
     
-        pthread_create(&writeThread, NULL,&commandLineInput,NULL);//returns errno on failure, 0 if succesful
+        pthread_create(&writeThread, NULL,&commandLineInput,NULL);//returns errno on failure, 0 if successful
         pthread_create(&readThread, NULL,&serverOutput ,NULL);
     
         pthread_join(writeThread, NULL);
