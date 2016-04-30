@@ -144,6 +144,7 @@ int main(int argc, char ** argv)
 
     
         //maybe have a lock so read and write cant happen at the same time
+        
     
     
     
