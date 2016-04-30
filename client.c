@@ -154,7 +154,8 @@ int main(int argc, char ** argv)
         //call join, join suspends the main program from going further until the thread terminates from start fnc
     
 //STEP 4 CLOSE SOCKET---------------------------------------------------------------------------------------------------
-    
+            pthread_mutex_destroy(&lock);
+
     close(sockfd);
     return 0;
 }
