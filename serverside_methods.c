@@ -59,11 +59,12 @@ void shutDownHandler(){
 
 //INPUT/OUTPUT TO CLIENT---------------------------------------------------------------------
 
-int open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERROR
-    int i;
+char* open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERROR
+     char retstr[100];
     
     if(numused == 20){
-        return 1; //ERROR! no space in bank
+        strcpy(retstr, "ERROR! SORRY, NO SPACE IN BANK");
+        return retstr; //ERROR! no space in bank
     }
     
     for(i = 0; i< 20; i++){
@@ -71,7 +72,8 @@ int open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERR
             continue;
         }
         if(strcmp(name, account_list[i]->acc_name) == 0){
-            return 2; //ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS
+            strcpy(retstr, "ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS. PLEASE CHOOSE A DIFFERENT NAME");
+            return retstr; //ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS
         }
     }
     
@@ -79,7 +81,8 @@ int open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERR
     
     
     if(strlen(name) == 0 || strlen(name) > 100){
-        return 3; //ERROR! ACCOUNT LENGTH IS INAPPROPRIATE. IT CANNOT BE ZERO OR GREATER THAN 100
+        strcpy(retstr, "ERROR! ACCOUNT NAME LENGTH IS INAPPROPRIATE");
+        return retstr; //ERROR! ACCOUNT LENGTH IS INAPPROPRIATE. IT CANNOT BE ZERO OR GREATER THAN 100
     }
     
     //AT THIS POINT, IT IS SAFE TO CREATE THE NEW ACCOUNT
@@ -96,7 +99,8 @@ int open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERR
     account_list[i]->in_session = 0;
     numused++;
     //Account successfully created, and added to the account_list array
-    return 0;
+     strcpy(retstr, "WOOT! ACCOUNT SUCCESSFULLY CREATED.");
+    return retstr;
     
 }
 
