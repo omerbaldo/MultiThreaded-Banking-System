@@ -449,6 +449,7 @@ int main(int argc, char ** argv){
         wire->socketNumber = oppositeSocket;
         
         if(oppositeSocket==-1){
+            free(wire);
             continue;
         }
         
