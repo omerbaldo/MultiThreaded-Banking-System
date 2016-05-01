@@ -47,7 +47,7 @@ struct client* constructor2(){
 //HELPER METHODS----------------------------------------------------------------------------
 void error(char *msg){
     perror(msg);
-    exit(0);
+    exit(1);
 }
 
 void shutDownHandler(){
@@ -380,8 +380,9 @@ void server_print(){
     }
 }
 
-int main(int argc, char ** argv){
-    
+
+
+void accountInit(){
     int i = 0;
     for(;i<20;i++){
         bzero(account_list[i].acc_name,100);
@@ -390,8 +391,16 @@ int main(int argc, char ** argv){
         account_list[i].balance = 0;
     }
     
-    
+}
+
+
+
+
+int main(int argc, char ** argv){
     int returnVal;//store return value of functions
+    
+    accountInit();//initiliaze account data structure
+    
     signal(SIGINT, shutDownHandler);//disconnects when user presses cnt c
     signal(SIGHUP, shutDownHandler);
     
