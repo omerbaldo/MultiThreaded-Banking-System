@@ -3,6 +3,7 @@
 int socketNumba = -1;
 pthread_t printThread;
 pthread_t customerThread;
+int locationindex;
 
 
 //STRUCTERS------------------------------------------------------------------------
