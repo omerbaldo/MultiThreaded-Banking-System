@@ -1,314 +1,381 @@
 #include "client&server.h"
 //GLOBALS------------------------------------------------------------------------
-int socketNumba = -1;
-pthread_t printThread;
-pthread_t customerThread;
-int location_index;
-
+	int socketNumba = -1;
+	pthread_t printThread;
+	pthread_t customerThread;
+	pthread_mutex_t openAccountlock;
+	pthread_mutex_t startAccountlock;
 
 //STRUCTERS------------------------------------------------------------------------
-struct acc_info{
-    int is_free; //0 means not free, 1 means free space
-    char acc_name[100];
-    float balance;
-    int in_session; //0 means not in use, 1 means in use
-};
+	struct acc_info{
+	    int is_free; //0 means not free, 1 means free space
+	    char acc_name[100];
+	    float balance;
+	    int in_session; //0 means not in use, 1 means in use
+	};
+	
+	struct acc_info account_list[20]; //array of strings consisting of the account names
+	int numused = 0; //number of accounts currently in bank
+	
+	
+	struct socketNode{
+	    int socketNumber;
+	    struct socketNode *next;
+	};
+	struct socketNode * head;
+	struct socketNode * last;
+	
+	
+	struct socketNode* constructor(int socketNumber, struct socketNode * next){
+	    struct socketNode * nn = (struct socketNode *) malloc(1*(sizeof(struct socketNode)));
+	    nn->next = next;
+	    nn->socketNumber = socketNumber;
+	    return nn;
+	}
+	
+    struct client{
+        struct sockaddr address;
+        int socketNumber;
+    };
 
-acc_info* account_list[20] = (acc_info*)malloc(20 * sizeof(struct acc_info)); //array of strings consisting of the account names
-//int[20] freelist; //tells if a particular position in the account list array is free
-int numused = 0; //number of accounts currently in bank
-
-
-struct socketNode{
-    int socketNumber;
-    struct socketNode *next;
-};
-struct socketNode * head;
-struct socketNode * last;
-
-
-struct socketNode* constructor(int socketNumber, struct socketNode * next){
-    
-    struct socketNode * nn = (struct socketNode *) malloc(1*(sizeof(struct socketNode)));
-    
-    nn->next = next;
-    nn->socketNumber = socketNumber;
-    
-    return nn;
-}
+    struct client* constructor2(){
+        struct client * nn = (struct client*)malloc(1*(sizeof(struct client)));
+        return nn;
+    }
 
 
 //HELPER METHODS----------------------------------------------------------------------------
-void error(char *msg){
-    perror(msg);
-    exit(0);
-}
-
-void shutDownHandler(){
-    if(head==NULL){return;}
-    struct socketNode * ptr;
-    ptr = head;
-    while(ptr!=NULL){
-        ptr=head->next;
-        close(head->socketNumber);
-        free(head);
-        head=ptr;
-    }
-    exit(0);
-}
+	void error(char *msg){
+	    perror(msg);
+	    exit(0);
+	}
+	
+	void shutDownHandler(){
+	    if(head==NULL){return;}
+	    struct socketNode * ptr;
+	    ptr = head;
+	    while(ptr!=NULL){
+	        ptr=head->next;
+	        close(head->socketNumber);
+	        free(head);
+	        head=ptr;
+	    }
+	    exit(0);
+	}
+	
+	//convert account name to index
+	//returns -1 if not found
+	//-2 if in use
+	
+	int accountToIndex(char * name){
+		int i;
+		for(i = 0; i< 20; i++){
+	        if(strcmp(account_list[i].acc_name, name) == 0){
+	    		   	 if(account_list[i].in_session == 1){
+	    		   	 	return -2;
+	    		   	 }
+	    		return i;   	
+	        }
+		}
+	    return -1;
+	}
+	
 
 
 //INPUT/OUTPUT TO CLIENT---------------------------------------------------------------------
 
-char* open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON ERROR
-     char retstr[100];
-    
-    if(numused == 20){
-        strcpy(retstr, "ERROR! SORRY, NO SPACE IN BANK");
-        return retstr; //ERROR! no space in bank
-    }
-    
-    for(i = 0; i< 20; i++){
-        if(account_list[i]->is_free == 1){ //this location account space is free
-            continue;
-        }
-        if(strcmp(name, account_list[i]->acc_name) == 0){
-            strcpy(retstr, "ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS. PLEASE CHOOSE A DIFFERENT NAME");
-            return retstr; //ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS
-        }
-    }
-    
-    //CHECK IF CLIENT IS ALREADY IN CUSTOMER SESSION, IF YES, CAUSE ERROR
-    
-    
-    if(strlen(name) == 0 || strlen(name) > 100){
-        strcpy(retstr, "ERROR! ACCOUNT NAME LENGTH IS INAPPROPRIATE");
-        return retstr; //ERROR! ACCOUNT LENGTH IS INAPPROPRIATE. IT CANNOT BE ZERO OR GREATER THAN 100
-    }
-    
-    //AT THIS POINT, IT IS SAFE TO CREATE THE NEW ACCOUNT
-    for(i = 0; i< 20; i++){
-        if(account_list[i]->is_free == 1){
-            break;
-        }
-    }
-    //At this point, we are at the first available free location in array
-    
-    account_list[i]->is_free = 0;
-    account_list[i]->balance = 0;
-    strcpy(account_list[i]->acc_name, name);
-    account_list[i]->in_session = 0;
-    numused++;
-    //Account successfully created, and added to the account_list array
-     strcpy(retstr, "WOOT! ACCOUNT SUCCESSFULLY CREATED.");
-    return retstr;
-    
-}
-
-
-
-
-char* start_account(char* name){ //RETURNS location index (positive number) of account in array if successfully started; returns -1, and -2 on ERROR!
-    int i;
-    char retstr[100];
-    
-    for(i = 0; i< 20; i++){
-        if(strcmp(account_list[i]->acc_name, name) == 0){
-            if(account_list[i]->in_session == 1){ //account is already in session, ERROR!
-                strcpy(retstr, "Error! Account already in Session");
-                return retstr;
-            }
-            
-            account_list[i]->in_session = 1;
-            location_index = i;
-            strcpy(retstr, "Account is now open");
-            return retstr;
-        }
-    }
-    
-    strcpy(retstr, "Error! Account name does not exist.")
-    return retstr; //account name does not exist, ERROR!
-}
-
-
-
-
-
-
-
-
-char* credit(int location_index, float amount){
-    char retstr[100];
-    if(location_index < 0){
-        strcpy(retstr, "Client cannot credit amount when not in session")
-        return retstr; //client not in session
-    }
-    
-    account_list[location_index]->balance = account_list[location_index]->balance + amount;
-    strcpy(retstr, "Successfully credited amount")
-    return retstr; //success
-}
-
-
-
-
-
-char* debit(int location_index, float amount){ //returns 0 on successful debit, 1 if customer is not in session, and 2 if customer trying to debit more than balance
-    char retstr[100];
-    if(location_index < 0){
-        strcpy(retstr, "Client cannot debit amount when not in session")
-        return retstr; //client not in session
-    }
-    
-    if(amount > account_list[location_index]->balance){
-        strcpy(retstr, "NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!");
-        return retstr; //NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!
-    }
-    account_list[location_index]->balance = account_list[location_index]->balance - amount;
-    strcpy(retstr, "Successfully debited amount");
-    return retstr; //success
-}
-
-
-
-
-
-float balance(char* name){
-    int i;
-    
-    for(i = 0; i< 20; i++){
-        if(strcmp(account_list[i]->acc_name, name) == 0){
-            break;
-        }
-    }
-    
-    if(account_list[i]->in_session == 0){
-        return 1; //not in session error!
-    }
-    
-    return account_list[i]->balance;
-}
-
-
-
-
-char* finish(char* name){
-    char retstr[100];
-    int i;
-    
-    for(i = 0; i< 20; i++){
-        if(strcmp(account_list[i]->acc_name, name) == 0){
-            break;
-        }
-    }
-    
-    if(account_list[i]->in_session == 0){ //account already not in session, error!
-        strcpy(retstr, "account already not in use, error!");
-        return retstr;
-    }
-    
-    account_list[i]->in_session = 1;
-    strcpy(retstr, "Successfully ended session");
-    return retstr; //success
-}
-
-
-
-void serverexec(socketinfo){
+	char * open_account(char* name){ 
+		
+	int i;
+	 pthread_mutex_lock(&openAccountlock);
+		    
+		    char retstr[100];
+		    bzero(retstr,100);
+		    
+		    if(numused == 20){
+		        strcpy(retstr, "ERROR! SORRY, NO SPACE IN BANK");
+		        return retstr; //ERROR! no space in bank
+		    }
+		    
+		    for(i = 0; i< 20; i++){
+		        if(account_list[i].is_free == 1){ //this location account space is free
+		            continue;
+		        }
+		        if(strcmp(name, account_list[i].acc_name) == 0){
+		            strcpy(retstr, "ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS. PLEASE CHOOSE A DIFFERENT NAME");
+		            return retstr; //ERROR! ACCOUNT WITH SAME NAME ALREADY EXISTS
+		        }
+		    }
+		    
+		    //CHECK IF CLIENT IS ALREADY IN CUSTOMER SESSION, IF YES, CAUSE ERROR
+		    if(strlen(name) == 0 || strlen(name) > 100){
+		        strcpy(retstr, "ERROR! ACCOUNT NAME LENGTH IS INAPPROPRIATE");
+		        return retstr; //ERROR! ACCOUNT LENGTH IS INAPPROPRIATE. IT CANNOT BE ZERO OR GREATER THAN 100
+		    }
+		    
+		    //AT THIS POINT, IT IS SAFE TO CREATE THE NEW ACCOUNT
+		    for(i = 0; i< 20; i++){
+		        if(account_list[i].is_free == 1){
+		            break;
+		        }
+		    }
+		    //At this point, we are at the first available free location in array
+		    account_list[i].is_free = 0;
+		    account_list[i].balance = 0;
+		    strcpy(account_list[i].acc_name, name);
+		    account_list[i].in_session = 0;
+		    numused++;
+		    //Account successfully created, and added to the account_list array
+		     strcpy(retstr, "WOOT! ACCOUNT SUCCESSFULLY CREATED.");
+		     
+	pthread_mutex_unlock(&openAccountlock);	     
+	    
+	    return retstr;
+	    
+	}
 	
-	pthread_mutex_t lock;
 	
-	char string[256];
+	
+	
+	char * start_account(char* name){ //updates location_index of account in account_list array
+	  
+	  
+	  
+   pthread_mutex_lock(&startAccountlock);
+	   
+		    int i;
+			char retstr[100];
+		    bzero(retstr,100);
+		    
+		    for(i = 0; i< 20; i++){
+		        if(strcmp(account_list[i].acc_name, name) == 0){
+		          
+		            if(account_list[i].in_session == 1){ //account is already in session, ERROR!
+		                strcpy(retstr, "Error! Account already in Session");
+		                return retstr;
+		            }
+		            
+		            account_list[i].in_session = 1;
+		            strcpy(retstr, "Account is now open");
+		            return retstr;
+		        }
+		    }
+		    
+		    strcpy(retstr, "Error! Account name does not exist.");
+  
+   pthread_mutex_unlock(&startAccountlock);
+	    
+	    return retstr; //account name does not exist, ERROR!
+	}
+	
+	
+	char * credit(int location_index, float amount){
+	   
+	   
+	   	char retstr[100];
+		bzero(retstr,100);
+	    
+	    if(location_index < 0){
+	        strcpy(retstr, "Client cannot credit amount when not in session");
+	        return retstr; //client not in session
+	    }
+	    
+	    account_list[location_index].balance = account_list[location_index].balance + amount;
+	    strcpy(retstr, "Successfully credited amount");
+	    
+	    return retstr; //success
+	}
+	
+
+	char* debit(int location_index, float amount){ 
+	    char retstr[100];
+	    bzero(retstr,100);
+	    
+	    if(location_index < 0){
+	        strcpy(retstr, "Client cannot debit amount when not in session");
+	        return retstr; //client not in session
+	    }
+	    
+	    if(amount > account_list[location_index].balance){
+	        strcpy(retstr, "NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!");
+	        return retstr; //NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!
+	    }
+	    account_list[location_index].balance = account_list[location_index].balance - amount;
+	    strcpy(retstr, "Successfully debited amount");
+	    return retstr; //success
+	}
+	
+	float balance(char* name){
+	    int i;
+	    
+	    for(i = 0; i< 20; i++){
+	        if(strcmp(account_list[i].acc_name, name) == 0){
+	            break;
+	        }
+	    }
+	    
+	    if(account_list[i].in_session == 0){
+	        return -1; //not in session error!
+	    }
+	    
+	    return account_list[i].balance;
+	}
+	
+
+	char* finish(char* name){
+	    char retstr[100];
+	    bzero(retstr,100);
+	    int i;
+	    
+	    for(i = 0; i< 20; i++){
+	        if(strcmp(account_list[i].acc_name, name) == 0){
+	            break;
+	        }
+	    }
+	    
+	    if(account_list[i].in_session == 0){ //account already not in session, error!
+	        strcpy(retstr, "account already not in use, error!");
+	        return retstr;
+	    }
+	    
+	    account_list[i].in_session = 1;
+	    strcpy(retstr, "Successfully ended session");
+	    return retstr; //success
+	}
+
+
+
+void serverexec(struct * client socketinfo){
+
+	char string[256]; //reads the user input
 	bzero(string, 256);
-	char* token;
-	char* returnstring;
-	char str[100];
-	int retval;
 	
+	
+	char* token; //token for input
+	
+	char returnstring [256]; //points to a string returned by function
+	bzero(returnstring, 256);
+	
+	int retval; //return value of a function
+	int clientSocket = wire->socketNumber;
+	int location_index = -1;//-1 means no account is open
+	
+	while(1){	
+
+		long retval = read(clientSocket, string, strlen(string));
 		
-	pthread_mutex_lock(&lock);
-		
-		long n = read(socket, string, strlen(string));
-		
-		if(n < 0){ 
+		if(retval < 0){ 
 			error("error reading from socket"); 
 		}
 		
 		if(strncmp("open", string, 4) == 0){
+			
 			token = strtok(string, " ");
 			token = strtok(NULL, " ");
-			
+		
 			returnstring = open_account(token);
-			write(socket, returnstring, strlen(returnstring));
+			write(clientSocket, returnstring, strlen(returnstring));
 			
 		}
 		else if(strncmp("start", string, 5) == 0){
+			
 			token = strtok(string, " ");
 			token = strtok(NULL, " ");
 			
 			returnstring = open_account(token);
-			write(socket, returnstring, strlen(returnstring));
+			location_index = accountToIndex(token);
+
+			write(clientSocket, returnstring, strlen(returnstring));
 		}
 		else if(strncmp("credit", string, 6)){
+		
 			token = strtok(string, " ");
 			token = strtok(NULL, " ");
 			
-			returnstring = credit(locationindex, (float)atof(token));
-			write(socket, returnstring, strlen(returnstring));
+			returnstring = credit(location_index, (float)atof(token));
+			
+			write(clientSocket, returnstring, strlen(returnstring));
 		}
 		else if(strncmp("debit", string, 5)){
 			token = strtok(string, " ");
 			token = strtok(NULL, " ");
 			
-			returnstring = credit(locationindex, (float)atof(token));
-			write(socket, returnstring, strlen(returnstring));
+			returnstring = debit(location_index, (float)atof(token));
+			write(clientSocket, returnstring, strlen(returnstring));
 		}
 		else if(strncmp("balance", string, 7)){
-			token = strtok(string, " ");
-			token = strtok(NULL, " ");
 			
-			sprintf(str, "Balance in account: %f", balance(account_list[locationindex]->acc_name);
-			write(socket, str, strlen(str));
+			retval =  balance(account_list[location_index].acc_name);
+			
+			if(retval == -1){
+				write(clientSocket,"Not in customer session",24);
+				continue;
+			}
+			sprintf(returnstring, "Balance in account: %f", balance(account_list[location_index].acc_name));
+			
+			write(clientSocket, returnstring, strlen(returnstring));
+		
+			
 		}
 		else if(strncmp("finish", string, 6)){
-			token = strtok(string, " ");
-			token = strtok(NULL, " ");
-			
-			returnstring = balance(account_list[locationindex]->acc_name);
-			write(socket, returnstring, strlen(returnstring));
+		
+			returnstring = finish(account_list[location_index].acc_name);
+			write(clientSocket, returnstring , strlen(returnstring));
 		}
 		
-	pthread_mutex_unlock(&lock);
+		else if(strncmp("exit", string, 4)){
+		
+			close(clientSocket);
+			free(socketinfo);
+			return;
+		}
+		else{
+			strcpy(returnstring, "Invalid input. Choose from one of the options above.");
+			write(clientSocket, returnstring, strlen(returnstring));
+		}
+	
+		bzero(string, 256);	
+		bzero(returnstring, 256);
+	
+		
+	}
 	
 	return;
-	
 }
 
 
 void server_print(){
     int i;
     
-    for(i = 0; i < 20; i++){
-        
-        if(account_list[i]!=NULL){
-            if(account_list[i]->isfree == 1){
-                continue;
-            }
-            if(account_list[i]->in_session == 1){ //account is in session
-                printf("%s%s\n%s\n\n", "Account Name: ", account_list[i]->acc_name, "IN SERVICE");
-            }
-            else{ //account is not in session
-                printf("%s%s\n%s%f\n\n", "Account Name: ", account_list[i]->acc_name, "Balance: ", account_list[i]->balance);
-            }
-        }
+    while(1){
+    	
+	    for(i = 0; i < 20; i++){
+	        if(account_list[i]!=NULL){
+	            if(account_list[i].isfree == 1){
+	                continue;
+	            }
+	            if(account_list[i].in_session == 1){ //account is in session
+	                printf("%s%s\n%s\n\n", "Account Name: ", account_list[i].acc_name, "IN SERVICE");
+	            }
+	            else{ //account is not in session
+	                printf("%s%s\n%s%f\n\n", "Account Name: ", account_list[i].acc_name, "Balance: ", account_list[i].balance);
+	            }
+	        }
+	    }
+	    
+	    sleep(20);
     }
 }
-
 
 int main(int argc, char ** argv){
     
     int returnVal;//store return value of functions
     signal(SIGINT, shutDownHandler);//disconnects when user presses cnt c
+    signal(SIGUP, shutDownHandler);
+    
+    pthread_mutex_init(&addAccountlock,NULL);
+    pthread_mutex_init(&startAccountlock,NULL);
+    
     
     //STEP 1: CREATE THE SOCKET (2 way wire)
     socketNumba = socket(AF_INET, SOCK_STREAM,0);//create socket
@@ -337,6 +404,7 @@ int main(int argc, char ** argv){
     pthread_detach(printThread);
     
     
+    printf("Server is now accepting incoming connections");
     //STEP 4: ACCEPT INCOMING CONNECTIONS
     int oppositeSocket;
     int clilen = -1;
@@ -354,6 +422,7 @@ int main(int argc, char ** argv){
             continue;
         }
         
+        printf("connection added");
         pthread_create(&customerThread, NULL, (void*)serverexec, wire);
         pthread_detach(customerThread);
         
@@ -363,8 +432,8 @@ int main(int argc, char ** argv){
             last->next = constructor(oppositeSocket, NULL);
             last = last->next;
         }
-      
+        
+        
     }
-}
-return 0;
+    return 0;
 }
