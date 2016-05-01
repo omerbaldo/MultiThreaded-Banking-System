@@ -1,14 +1,10 @@
 #include "client&server.h"
 
 //GLOBAL STRUCTS-------------------------------------------------------------------------------------
-    //SOCKET STUFF
     int sockfd = -1;
     struct sockaddr_in serverAddressInfo; //Address info
     struct hostent *serverIPAddress; //Info about the computer
-
-    pthread_mutex_t lock; //LOCK SO READ AND WRITE THREADS CAN'T HAPPEN AT THE SAME TIME
-
-
+    pthread_mutex_t lock; //LOCK SO READ AND WRITE THREADS CAN'T HAPPEN AT THE SAME TIME https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock
 
 //HELPER METHODS--------------------------------------------------------------------------------------
 void error(char *msg)
@@ -19,11 +15,9 @@ void error(char *msg)
 
 //INPUT OUTPUT THREADS-------------------------------------------------------------------------------
 void * commandLineInput(void * arg){ //arg is there as a placeholder.
-  
-    
+
     char string[256];
     bzero(string, 256);//NULL OUT ARRAY
-    
     while(1){
     
         pthread_mutex_lock(&lock);
@@ -34,21 +28,17 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
             
             if(n<0){ error("error writing to socket");}
             
-            
             if(strcmp("exit",string)){
                 printf("exiting\n");
                 pthread_exit(0);
                 return 0;
             }
             
-            
             bzero(string, 256);
             sleep(2);
-        
+            
         pthread_mutex_unlock(&lock);
     }
-    
-    
     
     return NULL;
 }
@@ -58,8 +48,6 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
 void * serverOutput (void *arg){
     char string[256];
     bzero(string, 256);//NULL OUT ARRAY
-    
-   
     
         while (1){
             
@@ -71,7 +59,7 @@ void * serverOutput (void *arg){
                 if (n < 0) {error("ERROR reading from socket"); }
                 
                 if(strcmp("exit",string)){
-                    printf("exiting\n");
+                    printf("Server Shut Down !!\n");
                     pthread_exit(0);
                     return 0;
                 }
@@ -82,8 +70,6 @@ void * serverOutput (void *arg){
             pthread_mutex_unlock(&lock);
             
         }
-    
-    
     
     return NULL;
 }
@@ -142,12 +128,8 @@ int main(int argc, char ** argv)
         printf("finish \n");
         printf("exit \n");
 
-    
         //maybe have a lock so read and write cant happen at the same time
         
-    
-    
-    
         pthread_create(&writeThread, NULL,&commandLineInput,NULL);//returns errno on failure, 0 if successful
         pthread_create(&readThread, NULL,&serverOutput ,NULL);
     
@@ -155,9 +137,8 @@ int main(int argc, char ** argv)
         pthread_join(readThread, NULL);
         //call join, join suspends the main program from going further until the thread terminates from start fnc
     
-//STEP 4 CLOSE SOCKET---------------------------------------------------------------------------------------------------
-            pthread_mutex_destroy(&lock);
-
+//STEP 4 Free/Close STUFF---------------------------------------------------------------------------------------------------
+    pthread_mutex_destroy(&lock);
     close(sockfd);
     return 0;
 }
