@@ -225,9 +225,8 @@ void serverexec(socketinfo){
 	char str[100];
 	int retval;
 	
-	while(1){
 		
-		pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lock);
 		
 		long n = read(socket, string, strlen(string));
 		
@@ -279,7 +278,9 @@ void serverexec(socketinfo){
 			write(socket, returnstring, strlen(returnstring));
 		}
 		
-	}
+	pthread_mutex_unlock(&lock);
+	
+	return;
 	
 }
 
