@@ -214,6 +214,75 @@ char* finish(char* name){
 
 
 
+void serverexec(socketinfo){
+	
+	pthread_mutex_t lock;
+	
+	char string[256];
+	bzero(string, 256);
+	char* token;
+	char* returnstring;
+	int retval;
+	
+	while(1){
+		
+		pthread_mutex_lock(&lock);
+		
+		long n = read(socket, string, strlen(string));
+		
+		if(n < 0){ 
+			error("error reading from socket"); 
+		}
+		
+		if(strncmp("open", string, 4) == 0){
+			token = strtok(string, " ");
+			token = strtok(NULL, " ");
+			
+			returnstring = open_account(token);
+			write(socket, returnstring, strlen(returnstring));
+			
+		}
+		else if(strncmp("start", string, 5) == 0){
+			token = strtok(string, " ");
+			token = strtok(NULL, " ");
+			
+			returnstring = open_account(token);
+			write(socket, returnstring, strlen(returnstring));
+		}
+		else if(strncmp("credit", string, 6)){
+			token = strtok(string, " ");
+			token = strtok(NULL, " ");
+			
+			returnstring = credit(locationindex, (float)atof(token));
+			write(socket, returnstring, strlen(returnstring));
+		}
+		else if(strncmp("debit", string, 5)){
+			token = strtok(string, " ");
+			token = strtok(NULL, " ");
+			
+			returnstring = credit(locationindex, (float)atof(token));
+			write(socket, returnstring, strlen(returnstring));
+		}
+		else if(strncmp("balance", string, 7)){
+			token = strtok(string, " ");
+			token = strtok(NULL, " ");
+			
+			returnstring = balance(account_list[locationindex]->acc_name);
+			write(socket, returnstring, strlen(returnstring));
+		}
+		else if(strncmp("finish", string, 6)){
+			token = strtok(string, " ");
+			token = strtok(NULL, " ");
+			
+			returnstring = balance(account_list[locationindex]->acc_name);
+			write(socket, returnstring, strlen(returnstring));
+		}
+		
+	}
+	
+}
+
+
 void server_print(){
     int i;
     
