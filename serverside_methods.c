@@ -222,6 +222,7 @@ void serverexec(socketinfo){
 	bzero(string, 256);
 	char* token;
 	char* returnstring;
+	char str[100];
 	int retval;
 	
 	while(1){
@@ -267,8 +268,8 @@ void serverexec(socketinfo){
 			token = strtok(string, " ");
 			token = strtok(NULL, " ");
 			
-			returnstring = balance(account_list[locationindex]->acc_name);
-			write(socket, returnstring, strlen(returnstring));
+			sprintf(str, "Balance in account: %f", balance(account_list[locationindex]->acc_name);
+			write(socket, str, strlen(str));
 		}
 		else if(strncmp("finish", string, 6)){
 			token = strtok(string, " ");
