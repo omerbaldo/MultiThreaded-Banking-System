@@ -108,7 +108,7 @@ char* open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON E
 
 
 
-int start_account(char* name){ //RETURNS location index (positive number) of account in array if successfully started; returns -1, and -2 on ERROR!
+char* start_account(char* name){ //RETURNS location index (positive number) of account in array if successfully started; returns -1, and -2 on ERROR!
     int i;
     char retstr[100];
     
@@ -137,29 +137,36 @@ int start_account(char* name){ //RETURNS location index (positive number) of acc
 
 
 
-int credit(int location_index, float amount){
+char* credit(int location_index, float amount){
+    char retstr[100];
     if(location_index < 0){
-        return 1; //client not in session
+        strcpy(retstr, "Client cannot credit amount when not in session")
+        return retstr; //client not in session
     }
     
     account_list[location_index]->balance = account_list[location_index]->balance + amount;
-    return 0; //success
+    strcpy(retstr, "Successfully credited amount")
+    return retstr; //success
 }
 
 
 
 
 
-int debit(int location_index, float amount){ //returns 0 on successful debit, 1 if customer is not in session, and 2 if customer trying to debit more than balance
+char* debit(int location_index, float amount){ //returns 0 on successful debit, 1 if customer is not in session, and 2 if customer trying to debit more than balance
+    char retstr[100];
     if(location_index < 0){
-        return 1; //client not in session
+        strcpy(retstr, "Client cannot debit amount when not in session")
+        return retstr; //client not in session
     }
     
     if(amount > account_list[location_index]->balance){
-        return 2; //NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!
+        strcpy(retstr, "NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!");
+        return retstr; //NOT ENOUGH AMOUNT TO WITHDRAW, LOW ON BALANCE ERROR!
     }
     account_list[location_index]->balance = account_list[location_index]->balance - amount;
-    return 0; //success
+    strcpy(retstr, "Successfully debited amount");
+    return retstr; //success
 }
 
 
@@ -185,7 +192,8 @@ float balance(char* name){
 
 
 
-int finish(char* name){
+char* finish(char* name){
+    char retstr[100];
     int i;
     
     for(i = 0; i< 20; i++){
@@ -195,11 +203,13 @@ int finish(char* name){
     }
     
     if(account_list[i]->in_session == 0){ //account already not in session, error!
-        return 1;
+        strcpy(retstr, "account already not in use, error!");
+        return retstr;
     }
     
     account_list[i]->in_session = 1;
-    return 0; //success
+    strcpy(retstr, "Successfully ended session");
+    return retstr; //success
 }
 
 
