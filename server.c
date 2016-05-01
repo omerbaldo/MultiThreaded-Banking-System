@@ -22,8 +22,8 @@ struct socketNode{
     int socketNumber;
     struct socketNode *next;
 };
-struct socketNode * head;
-struct socketNode * last;
+struct socketNode * head = NULL;
+struct socketNode * last = NULL;
 
 
 struct socketNode* constructor(int socketNumber, struct socketNode * next){
