@@ -10,7 +10,7 @@
     void error(char *msg)
     {
         perror(msg);
-        exit(0);
+        exit(1);
     }
 
 //INPUT OUTPUT THREADS-------------------------------------------------------------------------------
