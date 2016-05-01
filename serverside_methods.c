@@ -304,11 +304,6 @@ void server_print(){
 }
 
 
-
-
-
-
-
 int main(int argc, char ** argv){
     
     int returnVal;//store return value of functions
@@ -346,17 +341,19 @@ int main(int argc, char ** argv){
     int clilen = -1;
     while(1){ //create select
         
-        struct sockaddr_in clientAddressInfo;
+        struct client * wire = constructor2();
         
-        clilen = sizeof(clientAddressInfo);
+        socklen_t bytesToRead = sizeof(wire->address);
+       
+        oppositeSocket = accept(socketNumba, &wire->address, &bytesToRead); //from socketNumba, fill in the clientAddressInfo Struct and the size to read in
         
-        oppositeSocket = accept(socketNumba, (struct sockaddr *)&clientAddressInfo, &clilen);
+        wire->socketNumber = oppositeSocket;
         
         if(oppositeSocket==-1){
             continue;
         }
         
-        pthread_create(&customerThread, NULL, method which deals with input/output, clientAddressInfo);
+        pthread_create(&customerThread, NULL, (void*)serverexec, wire);
         pthread_detach(customerThread);
         
         if(head==NULL){
@@ -369,4 +366,6 @@ int main(int argc, char ** argv){
         
     }
     return 0;
+}
+eturn 0;
 }
