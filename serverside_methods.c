@@ -109,19 +109,24 @@ char* open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON E
 
 int start_account(char* name){ //RETURNS location index (positive number) of account in array if successfully started; returns -1, and -2 on ERROR!
     int i, location_index;
+    char retstr[100];
     
     for(i = 0; i< 20; i++){
         if(strcmp(account_list[i]->acc_name, name) == 0){
             if(account_list[i]->in_session == 1){ //account is already in session, ERROR!
-                return -1;
+                strcpy(retstr, "Error! Account already in Session");
+                return retstr;
             }
+            
             account_list[i]->in_session = 1;
             location_index = i;
-            return location_index;
+            strcpy(retstr, "Account is now open");
+            return retstr;
         }
     }
     
-    return -2; //account name does not exist, ERROR!
+    strcpy(retstr, "Error! Account name does not exist.")
+    return retstr; //account name does not exist, ERROR!
 }
 
 
