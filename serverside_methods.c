@@ -3,7 +3,7 @@
 int socketNumba = -1;
 pthread_t printThread;
 pthread_t customerThread;
-int locationindex;
+int location_index;
 
 
 //STRUCTERS------------------------------------------------------------------------
@@ -109,7 +109,7 @@ char* open_account(char* name){ //RETURNS 0 ON SUCCESS, RETURNS 1, 2, AND 3 ON E
 
 
 int start_account(char* name){ //RETURNS location index (positive number) of account in array if successfully started; returns -1, and -2 on ERROR!
-    int i, location_index;
+    int i;
     char retstr[100];
     
     for(i = 0; i< 20; i++){
