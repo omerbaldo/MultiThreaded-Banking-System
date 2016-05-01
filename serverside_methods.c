@@ -362,10 +362,8 @@ int main(int argc, char ** argv){
             last->next = constructor(oppositeSocket, NULL);
             last = last->next;
         }
-        
-        
+      
     }
-    return 0;
 }
-eturn 0;
+return 0;
 }
