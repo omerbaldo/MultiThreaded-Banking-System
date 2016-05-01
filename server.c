@@ -1,4 +1,5 @@
-#include "client&server.h"
+
+#include "Header.h"
 //GLOBALS------------------------------------------------------------------------
 int socketNumba = -1;
 pthread_t printThread;
@@ -51,15 +52,20 @@ void error(char *msg){
 }
 
 void shutDownHandler(){
-    if(head==NULL){return;}
+    
+    if(head==NULL){ exit(0);}
+    
     struct socketNode * ptr;
+    
     ptr = head;
+    
     while(ptr!=NULL){
         ptr=head->next;
         close(head->socketNumber);
         free(head);
         head=ptr;
     }
+    
     exit(0);
 }
 
@@ -366,16 +372,16 @@ void server_print(){
     while(1){
         
         for(i = 0; i < 20; i++){
-                if(account_list[i].is_free == 1){
-                    continue;
-                }
-                if(account_list[i].in_session == 1){ //account is in session
-                    printf("%s%s\n%s\n\n", "Account Name: ", account_list[i].acc_name, "IN SERVICE");
-                }
-                else{ //account is not in session
-                    printf("%s%s\n%s%f\n\n", "Account Name: ", account_list[i].acc_name, "Balance: ", account_list[i].balance);
-                }
+            if(account_list[i].is_free == 1){
+                continue;
             }
+            if(account_list[i].in_session == 1){ //account is in session
+                printf("%s%s\n%s\n\n", "Account Name: ", account_list[i].acc_name, "IN SERVICE");
+            }
+            else{ //account is not in session
+                printf("%s%s\n%s%f\n\n", "Account Name: ", account_list[i].acc_name, "Balance: ", account_list[i].balance);
+            }
+        }
         sleep(20);
     }
 }
@@ -397,6 +403,8 @@ void accountInit(){
 
 
 int main(int argc, char ** argv){
+    
+    printf("0 \n");
     int returnVal;//store return value of functions
     
     accountInit();//initiliaze account data structure
@@ -407,29 +415,35 @@ int main(int argc, char ** argv){
     pthread_mutex_init(&openAccountlock,NULL);
     pthread_mutex_init(&startAccountlock,NULL);
     
-    
+    printf("1 \n");
     //STEP 1: CREATE THE SOCKET (2 way wire)
     socketNumba = socket(AF_INET, SOCK_STREAM,0);//create socket
     if(socketNumba<0){
         error("could not open server socket");
     }
     
+    printf("2 \n");
     //STEP 2. DO STUFF WITH SERVER ADDRESS OBJECT
     struct sockaddr_in serverAddressInfo;
     bzero((char *) &serverAddressInfo, sizeof(serverAddressInfo)); //INITILIAZE
-    serverAddressInfo.sin_port = htons(portNumber); //ADD PORT
     serverAddressInfo.sin_family = AF_INET; //INTERNET FAMILY
     serverAddressInfo.sin_addr.s_addr = INADDR_ANY; //TYPE OF IP CONNECTIONS WE CAN ADD
-    
+    serverAddressInfo.sin_port = htons(portNumber); //ADD PORT
+
+    printf("3 \n");
     //STEP 2: BIND THE wire/socket TO A PORT on SERVER
-    returnVal =	bind(socketNumba, (struct sockaddr *) &serverAddressInfo, sizeof(serverAddressInfo));
+                                                                        //server address info
+    returnVal =	bind(socketNumba, (struct sockaddr *) &serverAddressInfo, sizeof(struct sockaddr_in));
     if(returnVal<0){
-        error("binding error");
+        error("binding error \n");
     }
+     
     
-    //STEP 3: LISTEN FOR INCOMING CONNECITONS ON SOCKET
-    listen(socketNumba,10); //10 pending connection on queue
-				
+    //STEP 3: LISTEN FOR INCOMING CONNECITONS ON SOCKET we just bound
+    listen(socketNumba,3); //10 pending connection on queue
+			
+    
+    printf("4 \n");
     //STEP 4: CREATE PRINTING THREAD BEFORE YOU SELECT/ACCEPT INCOMING CONNECTIONS
     pthread_create(&printThread, NULL, (void*)server_print, NULL);
     pthread_detach(printThread);
@@ -439,12 +453,17 @@ int main(int argc, char ** argv){
     //STEP 4: ACCEPT INCOMING CONNECTIONS
     int oppositeSocket;
     while(1){ //create select
-        
+    
+        printf("5 \n");
         struct client * wire = constructor2();
         
         socklen_t bytesToRead = sizeof(wire->address);
         
         oppositeSocket = accept(socketNumba, &wire->address, &bytesToRead); //from socketNumba, fill in the clientAddressInfo Struct and the size to read in
+        //waits here for incoming connections
+        
+        printf("connection accepted");
+        
         
         wire->socketNumber = oppositeSocket;
         
@@ -453,7 +472,7 @@ int main(int argc, char ** argv){
             continue;
         }
         
-        printf("connection added");
+        printf("Connection added \n");
         pthread_create(&customerThread, NULL, (void*)serverexec, wire);
         pthread_detach(customerThread);
         
