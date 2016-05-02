@@ -69,20 +69,17 @@ void shutDownHandler(){
         head=ptr;
     }
     
+    close(socketNumba);
     exit(0);
 }
 
 //convert account name to index
 //returns -1 if not found
-//-2 if in use
 
 int accountToIndex(char * name){
     int i;
     for(i = 0; i< 20; i++){
         if(strcmp(account_list[i].acc_name, name) == 0){
-	    		   	 if(account_list[i].in_session == 1){
-                         return -2;
-                     }
             return i;
         }
     }
@@ -260,7 +257,7 @@ char* finish(char* name){
         return r;
     }
     
-    account_list[i].in_session = 1;
+    account_list[i].in_session = 0;
     strcpy(retstr, "Successfully ended session");
     r = retstr;
     return r; //success
@@ -272,97 +269,95 @@ void serverexec(void * socketinfo){
     
     struct client * wire = (struct client *)(socketinfo);
     
+    char clientMessage[256]; //reads the user input
+    bzero(clientMessage, 256);
     
-    char string[256]; //reads the user input
-    bzero(string, 256);
-    
+    float bal;
     
     char* token; //token for input
     
     char * returnstring; //points to a string returned by function
    
+    char send[256];
+    bzero(send, 256);
+    
     
     int clientSocket = wire->socketNumber;
     int location_index = -1;//-1 means no account is open
     
     while(1){
         
-        printf("currently reading output");
+        long retval = read(clientSocket, clientMessage, 255);
         
-        long retval = read(clientSocket, string, strlen(string));
-        
-        if(retval < 0){
+        if(retval ==-1){
             error("error reading from socket");
         }
-        if(retval==0){ continue; }
-        if(strncmp("open", string, 4) == 0){
+        
+        if(retval==0){ //client dissconnected
+            return;
+        }
+        
+        if(strncmp("open", clientMessage, 4) == 0){
             
-            printf("open");
+            printf("open \n");
 
-            
-            token = strtok(string, " ");
+            token = strtok(clientMessage, " ");
             token = strtok(NULL, " ");
             
             returnstring = open_account(token);
             write(clientSocket, returnstring, strlen(returnstring));
-            
         }
-        else if(strncmp("start", string, 5) == 0){
+        else if(strncmp("start", clientMessage, 5) == 0){
             
-            printf("start");
+            printf("start \n");
 
-            
-            token = strtok(string, " ");
+            token = strtok(clientMessage, " ");
             token = strtok(NULL, " ");
             
-            returnstring = open_account(token);
+            returnstring = start_account(token);
             location_index = accountToIndex(token);
             
             write(clientSocket, returnstring, strlen(returnstring));
         }
-        else if(strncmp("credit", string, 6)==0){
-            printf("credit");
-
-            
-            token = strtok(string, " ");
+        //DEBUG
+        else if(strncmp("credit", clientMessage, 6)==0){
+            printf("credit \n");
+            token = strtok(clientMessage, " ");
             token = strtok(NULL, " ");
-            
             returnstring = credit(location_index, (float)atof(token));
-            
             write(clientSocket, returnstring, strlen(returnstring));
         }
-        else if(strncmp("debit", string, 5) == 0){
+        else if(strncmp("debit", clientMessage, 5) == 0){
           
-            printf("debit");
+            printf("debit \n");
 
             
-            token = strtok(string, " ");
+            token = strtok(clientMessage, " ");
             token = strtok(NULL, " ");
-            
             returnstring = debit(location_index, (float)atof(token));
             write(clientSocket, returnstring, strlen(returnstring));
         }
-        else if(strncmp("balance", string, 7)==0){
+        else if(strncmp("balance", clientMessage, 7)==0){
             
-            printf("balance");
+            printf("balance \n");
 
             
-            retval =  balance(account_list[location_index].acc_name);
+            bal =  balance(account_list[location_index].acc_name);
             
-            if(retval == -1){
+            if(bal == -1){
                 write(clientSocket,"Not in customer session",24);
                 continue;
             }
-            sprintf(returnstring, "Balance in account: %f", balance(account_list[location_index].acc_name));
+            sprintf(send, "Balance in account: %f", bal);
             
-            write(clientSocket, returnstring, strlen(returnstring));
+            write(clientSocket, send, strlen(send));
             
             
         }
-        else if(strncmp("finish", string, 6)==0){
+        else if(strncmp("finish", clientMessage, 6)==0){
             
             
-            printf("finish");
+            printf("finish \n");
 
             
             
@@ -370,7 +365,7 @@ void serverexec(void * socketinfo){
             write(clientSocket, returnstring , strlen(returnstring));
         }
         
-        else if(strncmp("exit", string, 4)==0){
+        else if(strncmp("exit \n", clientMessage, 4)==0){
             
             printf("exit");
 
@@ -381,17 +376,30 @@ void serverexec(void * socketinfo){
         }
         else{
             
-            printf("invalid");
+            printf("invalid \n");
 
             
-            strcpy(returnstring, "Invalid input. Choose from one of the options above.");
-            write(clientSocket, returnstring, strlen(returnstring));
+           // strcpy(returnstring, "Invalid input. Choose from one of the options above.");
+            write(clientSocket, "Invalid input. Choose from one of the options above.", 54);
         }
-        
-        bzero(string, 256); //zero out client message
+         bzero(send, 256);
+        bzero(clientMessage, 256); //zero out client message
     }
     return;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //binary tides server client example
@@ -461,26 +469,23 @@ int main(int argc, char ** argv){
                                                                         //server address info
     returnVal =	bind(socketNumba, (struct sockaddr *) &serverAddressInfo, sizeof(struct sockaddr_in));
     if(returnVal<0){
-        error("binding error \n");
+        error("binding error ");
     }
      
     
     //STEP 3: LISTEN FOR INCOMING CONNECITONS ON SOCKET we just bound
     listen(socketNumba,3); //10 pending connection on queue
 			
-    
-    printf("4 \n");
     //STEP 4: CREATE PRINTING THREAD BEFORE YOU SELECT/ACCEPT INCOMING CONNECTIONS
     pthread_create(&printThread, NULL, (void*)server_print, NULL);
     pthread_detach(printThread);
     
     
-    printf("Server is now accepting incoming connections");
+    printf("Server is now accepting incoming connections \n");
     //STEP 4: ACCEPT INCOMING CONNECTIONS
     int oppositeSocket;
     while(1){ //create select
     
-        printf("5 \n");
         struct client * wire = constructor2();
         
         socklen_t bytesToRead = sizeof(wire->address);
@@ -504,6 +509,7 @@ int main(int argc, char ** argv){
         
         if(head==NULL){
             head = constructor(oppositeSocket, NULL);
+            last = head;
         }else{
             last->next = constructor(oppositeSocket, NULL);
             last = last->next;
@@ -513,6 +519,10 @@ int main(int argc, char ** argv){
     }
     
     
-    close(socketNumba);
+  
+    
+    
+    
+    
     return 0;
 }
