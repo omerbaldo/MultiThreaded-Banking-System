@@ -26,7 +26,7 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
         
         if(n<0){ error("error writing to socket \n");}
         
-        if(strcmp("exit",string)){
+        if(strcmp("exit",string)==0){
             printf("exiting\n");
             pthread_exit(0);
             return 0;
