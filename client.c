@@ -20,20 +20,24 @@ void * commandLineInput(void * arg){ //arg is there as a placeholder.
         
         pthread_mutex_lock(&lock);
         
-        fgets(string,255,stdin); //reads in command line input until the last character
-        
-        long n = write(sockfd, string, strlen(string));
-        
-        if(n<0){ error("error writing to socket \n");}
-        
-        if(strcmp("exit",string)==0){
-            printf("exiting\n");
-            pthread_exit(0);
-            return 0;
-        }
-        
-        bzero(string, 256);
-        sleep(2);
+            fgets(string,255,stdin); //reads in command line input until the last character
+            
+            if(write(sockfd, string, strlen(string))>0){
+                printf("Message Sent !\n");
+            }else{
+                error("error writing to socket \n");
+
+            }
+    
+            
+            if(strcmp("exit",string)==0){
+                printf("exiting\n");
+                pthread_exit(0);
+                return 0;
+            }
+            
+            bzero(string, 256);
+            sleep(2);
         
         pthread_mutex_unlock(&lock);
     }
@@ -51,19 +55,19 @@ void * serverOutput (void *arg){
         
         pthread_mutex_lock(&lock);
         
-        long n = read(sockfd,string,255); //read until the last character to keep \0
-        
-        // if we couldn't read from the server for some reason, complain and exit
-        if (n < 0) {error("ERROR reading from socket \n"); }
-        
-        if(strcmp("exit",string)){
-            printf("Server Shut Down !!\n");
-            pthread_exit(0);
-            return 0;
-        }
-        
-        printf("%s\n",string);
-        bzero(string, 256);
+            long n = read(sockfd,string,255); //read until the last character to keep \0
+            
+            // if we couldn't read from the server for some reason, complain and exit
+            if (n < 0) {error("ERROR reading from socket \n"); }
+            
+            if(strcmp("exit",string)==0){
+                printf("Server Shut Down !!\n");
+                pthread_exit(0);
+                return 0;
+            }
+            
+            printf("%s\n",string);
+            bzero(string, 256);
         
         pthread_mutex_unlock(&lock);
         
