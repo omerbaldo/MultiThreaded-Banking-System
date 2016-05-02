@@ -53,7 +53,10 @@ void error(char *msg){
 
 void shutDownHandler(){
     
-    if(head==NULL){ exit(0);}
+    if(head==NULL){
+        
+        exit(0);
+    }
     
     struct socketNode * ptr;
     
@@ -277,20 +280,25 @@ void serverexec(void * socketinfo){
     char* token; //token for input
     
     char * returnstring; //points to a string returned by function
-    bzero(returnstring, 256);
+   
     
     int clientSocket = wire->socketNumber;
     int location_index = -1;//-1 means no account is open
     
     while(1){
         
+        printf("currently reading output");
+        
         long retval = read(clientSocket, string, strlen(string));
         
         if(retval < 0){
             error("error reading from socket");
         }
-        
+        if(retval==0){ continue; }
         if(strncmp("open", string, 4) == 0){
+            
+            printf("open");
+
             
             token = strtok(string, " ");
             token = strtok(NULL, " ");
@@ -301,6 +309,9 @@ void serverexec(void * socketinfo){
         }
         else if(strncmp("start", string, 5) == 0){
             
+            printf("start");
+
+            
             token = strtok(string, " ");
             token = strtok(NULL, " ");
             
@@ -309,7 +320,9 @@ void serverexec(void * socketinfo){
             
             write(clientSocket, returnstring, strlen(returnstring));
         }
-        else if(strncmp("credit", string, 6)){
+        else if(strncmp("credit", string, 6)==0){
+            printf("credit");
+
             
             token = strtok(string, " ");
             token = strtok(NULL, " ");
@@ -318,14 +331,21 @@ void serverexec(void * socketinfo){
             
             write(clientSocket, returnstring, strlen(returnstring));
         }
-        else if(strncmp("debit", string, 5)){
+        else if(strncmp("debit", string, 5) == 0){
+          
+            printf("debit");
+
+            
             token = strtok(string, " ");
             token = strtok(NULL, " ");
             
             returnstring = debit(location_index, (float)atof(token));
             write(clientSocket, returnstring, strlen(returnstring));
         }
-        else if(strncmp("balance", string, 7)){
+        else if(strncmp("balance", string, 7)==0){
+            
+            printf("balance");
+
             
             retval =  balance(account_list[location_index].acc_name);
             
@@ -339,32 +359,42 @@ void serverexec(void * socketinfo){
             
             
         }
-        else if(strncmp("finish", string, 6)){
+        else if(strncmp("finish", string, 6)==0){
+            
+            
+            printf("finish");
+
+            
             
             returnstring = finish(account_list[location_index].acc_name);
             write(clientSocket, returnstring , strlen(returnstring));
         }
         
-        else if(strncmp("exit", string, 4)){
+        else if(strncmp("exit", string, 4)==0){
+            
+            printf("exit");
+
             
             close(clientSocket);
             free(socketinfo);
             return;
         }
         else{
+            
+            printf("invalid");
+
+            
             strcpy(returnstring, "Invalid input. Choose from one of the options above.");
             write(clientSocket, returnstring, strlen(returnstring));
         }
         
-        bzero(string, 256);
-        bzero(returnstring, 256);
-        
-        
+        bzero(string, 256); //zero out client message
     }
-    
     return;
 }
 
+
+//binary tides server client example
 
 void server_print(){
     int i;
@@ -404,7 +434,6 @@ void accountInit(){
 
 int main(int argc, char ** argv){
     
-    printf("0 \n");
     int returnVal;//store return value of functions
     
     accountInit();//initiliaze account data structure
@@ -415,14 +444,12 @@ int main(int argc, char ** argv){
     pthread_mutex_init(&openAccountlock,NULL);
     pthread_mutex_init(&startAccountlock,NULL);
     
-    printf("1 \n");
     //STEP 1: CREATE THE SOCKET (2 way wire)
     socketNumba = socket(AF_INET, SOCK_STREAM,0);//create socket
     if(socketNumba<0){
         error("could not open server socket");
     }
     
-    printf("2 \n");
     //STEP 2. DO STUFF WITH SERVER ADDRESS OBJECT
     struct sockaddr_in serverAddressInfo;
     bzero((char *) &serverAddressInfo, sizeof(serverAddressInfo)); //INITILIAZE
@@ -430,7 +457,6 @@ int main(int argc, char ** argv){
     serverAddressInfo.sin_addr.s_addr = INADDR_ANY; //TYPE OF IP CONNECTIONS WE CAN ADD
     serverAddressInfo.sin_port = htons(portNumber); //ADD PORT
 
-    printf("3 \n");
     //STEP 2: BIND THE wire/socket TO A PORT on SERVER
                                                                         //server address info
     returnVal =	bind(socketNumba, (struct sockaddr *) &serverAddressInfo, sizeof(struct sockaddr_in));
@@ -462,7 +488,7 @@ int main(int argc, char ** argv){
         oppositeSocket = accept(socketNumba, &wire->address, &bytesToRead); //from socketNumba, fill in the clientAddressInfo Struct and the size to read in
         //waits here for incoming connections
         
-        printf("connection accepted");
+        printf("connection accepted \n");
         
         
         wire->socketNumber = oppositeSocket;
@@ -485,5 +511,8 @@ int main(int argc, char ** argv){
         
         
     }
+    
+    
+    close(socketNumba);
     return 0;
 }
