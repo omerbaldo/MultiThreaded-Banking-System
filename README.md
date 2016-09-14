@@ -6,5 +6,3 @@ The structure of this proj:
   server.c
   
 
-
-Still on client side. Got connection to look ok. need to work on writing to a buffer, signaling when threads are created, and writing the input/output funcitons.
